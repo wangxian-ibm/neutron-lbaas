@@ -20,6 +20,7 @@ import eventlet
 eventlet.monkey_patch()
 
 from neutron.agent.common import config
+from neutron.agent.linux import external_process
 from neutron.agent.linux import interface
 from neutron.common import config as common_config
 from neutron.common import rpc as n_rpc
@@ -55,6 +56,7 @@ def main():
     cfg.CONF.register_opts(manager.OPTS)
     # import interface options just in case the driver uses namespaces
     cfg.CONF.register_opts(interface.OPTS)
+    cfg.CONF.register_opts(external_process.OPTS)
     config.register_interface_driver_opts_helper(cfg.CONF)
     config.register_agent_state_opts_helper(cfg.CONF)
     config.register_root_helper(cfg.CONF)
