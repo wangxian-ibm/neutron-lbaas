@@ -346,18 +346,19 @@ class HaproxyNSDriver(agent_device_driver.AgentDeviceDriver):
         self.vif_driver.unplug(interface_name, namespace=namespace)
 
     def _spawn(self, loadbalancer, extra_cmd_args=()):
+        conf_path = self._get_state_file_path(loadbalancer.id,
+                                              'haproxy.conf')
+        sock_path = self._get_state_file_path(loadbalancer.id,
+                                              'haproxy_stats.sock')
+        user_group = self.conf.haproxy.user_group
+        haproxy_base_dir = self._get_state_file_path(loadbalancer.id, '')
+        jinja_cfg.save_config(conf_path,
+                              loadbalancer,
+                              sock_path,
+                              user_group,
+                              haproxy_base_dir)
+
         def callback(pid_path):
-            conf_path = self._get_state_file_path(loadbalancer.id,
-                                                  'haproxy.conf')
-            sock_path = self._get_state_file_path(loadbalancer.id,
-                                                  'haproxy_stats.sock')
-            user_group = self.conf.haproxy.user_group
-            haproxy_base_dir = self._get_state_file_path(loadbalancer.id, '')
-            jinja_cfg.save_config(conf_path,
-                                  loadbalancer,
-                                  sock_path,
-                                  user_group,
-                                  haproxy_base_dir)
             cmd = ['haproxy', '-f', conf_path, '-p', pid_path]
             cmd.extend(extra_cmd_args)
             return cmd
@@ -372,8 +373,12 @@ class HaproxyNSDriver(agent_device_driver.AgentDeviceDriver):
             service=HAPROXY_SERVICE_NAME,
             conf=self.conf,
             pids_path=pid_path,
-            pid_file=pid_data)
-        pm.enable(reload_cfg=False)
+            pid_file=pid_data,
+            custom_reload_callback=callback if extra_cmd_args else None)
+        if pm.active:
+            pm.reload_cfg()
+        else:
+            pm.enable()
         self.process_monitor.register(uuid=loadbalancer.id,
                                       service_name=HAPROXY_SERVICE_NAME,
                                       monitored_process=pm)
