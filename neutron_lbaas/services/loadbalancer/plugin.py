@@ -470,8 +470,9 @@ class LoadBalancerPluginv2(loadbalancerv2.LoadBalancerPluginBaseV2):
         else:
             if not self.default_provider:
                 raise pconf.DefaultServiceProviderNotFound(
-                    service_type=constants.LOADBALANCER)
-            del entity['provider']
+                    service_type=constants.LOADBALANCERV2)
+            if entity.get('provider'):
+                del entity['provider']
             return self.default_provider
 
     def _call_driver_operation(self, context, driver_method, db_entity,
